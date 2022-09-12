@@ -13,3 +13,9 @@ public class SnakePart
     public Point Position { get; set; }
     public bool IsHead { get; set; }
 }
+public class SnakeHighscore
+{
+    public string PlayerName { get; set; }
+
+    public int Score { get; set; }
+}
