@@ -23,18 +23,18 @@ Last updated: 13-09-2022
 **PauseGame**
 
 <img src="PicReadme\PauseGame.JPG" style="display: inline-block; margin: 0 auto; max-width: 300px">
-<img src="PicReadme\PauseGameKey.jpg" style="max-width: 300px">
+<img src="PicReadme\PauseGameKey.JPG" style="max-width: 300px">
 
 **Upgraded point system**
 
 When program start it set _foodCount plus 1 when create a food and _bounsPoint is 2.
 
-<img src="PicReadme\EatSnakeFood.jpg" style="display: inline-block; margin: 0 auto; max-width: 300px"> 
+<img src="PicReadme\EatSnakeFood.JPG" style="display: inline-block; margin: 0 auto; max-width: 300px"> 
 <img src="PicReadme\CreateFood.JPG" style="max-width: 300px">
 
 **Delete HighscoreList**
 
-<img src="PicReadme\DeleteHs.jpg">
+<img src="PicReadme\DeleteHs.JPG">
 
 **Menu**
 
