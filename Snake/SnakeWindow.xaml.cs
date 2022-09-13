@@ -35,10 +35,12 @@ public partial class SnakeWindow : Window
     const int _snakeSquareSize = 20,
         _snakeStartLength = 3,
         _snakeStartSpeed = 400,
-        _snakeSpeedThreshold = 100,
-        _maxHighscoreListEntryCount = 5;
-    private int _snakeLength, _currentScore = 0;
+        _snakeSpeedThreshold = 50,
+        _maxHighscoreListEntryCount = 10;
+    private int _snakeLength, _currentScore = 0, _bonusPoint = 2, _foodCount;
     private UIElement _snakeFood = null;
+    private SolidColorBrush _background = Brushes.Aquamarine;
+    private SolidColorBrush _epicFoodBrush = Brushes.Purple;
     private SolidColorBrush _foodBrush = Brushes.Red;
     private SolidColorBrush _snakeBodyBrush = Brushes.Green;
     private SolidColorBrush _snakeHeadBrush = Brushes.YellowGreen;
@@ -54,7 +56,6 @@ public partial class SnakeWindow : Window
     private void Window_ContentRendered(object sender, EventArgs e)
     {
         DrawGameArea();
-        //gameTickTimer.Tick += GameTickTimer_Tick;
         LoadHighscoreList();
     }
     private void DrawGameArea()
@@ -67,7 +68,7 @@ public partial class SnakeWindow : Window
             Rectangle rec = new Rectangle {
                 Width = _snakeSquareSize, 
                 Height = _snakeSquareSize, 
-                Fill = nextIsOdd ? Brushes.White : Brushes.Aquamarine 
+                Fill = nextIsOdd ? Brushes.White : _background 
             };
             GameArea.Children.Add(rec);
             Canvas.SetTop(rec, nextY);
@@ -153,6 +154,10 @@ public partial class SnakeWindow : Window
         bdrWelcomeMessage.Visibility = Visibility.Collapsed;
         bdrNewHighscore.Visibility = Visibility.Collapsed;
         bdrHighscoreList.Visibility = Visibility.Collapsed;
+        bdrEndOfGame.Visibility = Visibility.Collapsed;
+        bdrPause.Visibility = Visibility.Collapsed;
+        _foodCount = 0;
+        _bonusPoint = 2;
         foreach (SnakePart snakeBodyPart in _snakeParts)
         {
             if (snakeBodyPart.UiElement != null)
@@ -185,15 +190,32 @@ public partial class SnakeWindow : Window
         }
         return new Point(foodX, foodY);
     }
+    /// <summary>
+    /// Show food in red coler and every 6 is purple
+    /// </summary>
     private void DrawSnakeFood()
     {
         Point foodPosition = GetNextFoodPosition();
-        _snakeFood = new Ellipse
+        _foodCount++;
+        if (_foodCount != 0 & _foodCount % 6 == 0)
         {
-            Width = _snakeSquareSize,
-            Height = _snakeSquareSize,
-            Fill = _foodBrush
-        };
+            _snakeFood = new Ellipse 
+            {
+                Width = _snakeSquareSize,
+                Height = _snakeSquareSize,
+                Fill = _epicFoodBrush
+            }; 
+        }
+        else
+        {
+            _snakeFood = new Ellipse
+            {
+                Width = _snakeSquareSize,
+                Height = _snakeSquareSize,
+                Fill = _foodBrush
+            };
+        }
+
         GameArea.Children.Add(_snakeFood);
         Canvas.SetTop(_snakeFood, foodPosition.Y);
         Canvas.SetLeft(_snakeFood, foodPosition.X);
@@ -219,8 +241,13 @@ public partial class SnakeWindow : Window
                 if (_snakeDirection != SnakeDirection.Left)
                     _snakeDirection= SnakeDirection.Right;
                 break;
+            case Key.P:
+                if (_snakeParts.Count > 0)
+                    PauseGame();
+                break;
             case Key.Space:
-                StartNewGame();
+                if (gameTickTimer.IsEnabled == false)
+                    StartNewGame();
                 break;
             default:
                 break;
@@ -250,8 +277,15 @@ public partial class SnakeWindow : Window
     private void EatSnakeFood()
     {
         _snakeLength++;
-        _currentScore++;
-        int timerInterval = Math.Max(_snakeSpeedThreshold, (int)gameTickTimer.Interval.TotalMilliseconds - (_currentScore * 2));
+        if (_foodCount != 0 & _foodCount % 6 == 0)
+        {
+            _currentScore += _bonusPoint;
+            _bonusPoint++;
+        }
+        else 
+            _currentScore++;
+
+        int timerInterval = Math.Max(_snakeSpeedThreshold, (int)gameTickTimer.Interval.TotalMilliseconds - (_foodCount * 2));
         gameTickTimer.Interval = TimeSpan.FromMilliseconds(timerInterval);
         GameArea.Children.Remove(_snakeFood);
         DrawSnakeFood();
@@ -260,7 +294,26 @@ public partial class SnakeWindow : Window
     private void UpdateGameStatus()
     {
         this.tbStatusScore.Text = _currentScore.ToString();
+        this.tbBonus.Text = _bonusPoint.ToString();
         this.tbStatusSpeed.Text = gameTickTimer.Interval.TotalMilliseconds.ToString();
+    }
+    /// <summary>
+    /// Puase running game when p is pressed
+    /// </summary>
+    private void PauseGame()
+    {
+        if (gameTickTimer.IsEnabled == true)
+        {
+            gameTickTimer.IsEnabled = false;
+            bdrPause.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            gameTickTimer.IsEnabled = true;
+            bdrPause.Visibility = Visibility.Collapsed;
+            bdrWelcomeMessage.Visibility = Visibility.Collapsed;
+            bdrHighscoreList.Visibility = Visibility.Collapsed;
+        }
     }
     private void EndGame()
     {
@@ -284,6 +337,26 @@ public partial class SnakeWindow : Window
     }
     private void Window_MouseDown(object sender, MouseButtonEventArgs e) => this.DragMove();
     private void BtnClose_Click(object sender, RoutedEventArgs e) => this.Close();
+    private void MnuMenu_Click(object sender, RoutedEventArgs e)
+    {
+        bdrWelcomeMessage.Visibility = Visibility.Visible;
+        bdrHighscoreList.Visibility = Visibility.Collapsed;
+        bdrPause.Visibility = Visibility.Collapsed;
+    }
+    private void MnuShowRules_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Use the Arrow keys to control the green snake. " +
+        "Make it eat the red apples, but be sure not to crash into the walls or the tail of the snake!", "Rules");
+    private void MnuDeleteHighScore_Click(object sender, RoutedEventArgs e)
+    {
+        if (File.Exists("snake_highscorelist.xml"))
+        {
+            File.Delete("snake_highscorelist.xml");
+            this.HighscoreList.Clear();
+            LoadHighscoreList();
+            MessageBox.Show("Highscore is deleted", "Delete Highscore");
+        }
+        else
+            MessageBox.Show("Highscore is not deleted\nNo players on list", "Delete Highscore");
+    }
     private void BtnShowHighscoreList_Click(object sender, RoutedEventArgs e)
     {
         bdrWelcomeMessage.Visibility = Visibility.Collapsed;
